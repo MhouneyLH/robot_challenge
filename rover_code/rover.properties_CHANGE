@@ -1,0 +1,5 @@
+[rover]
+rover_id=?
+
+[mqtt]
+broker_ip=192.168.23.1
