@@ -6,6 +6,13 @@ SPEED = 70
 TURNING_DURATION = 3
 TURNING_SPEED = 70
 MEASUREMENT_DEFAULT_VALUE = -1
+POINT_LIST = [
+    (100, 100),
+    [100, 900],
+    [1000, 500],
+    [1900, 900],
+    [1900, 100],
+]
 
 
 def turn_right(bot: Rover):
@@ -50,9 +57,16 @@ def measure(bot):
 bot = Rover()
 bot.beep()
 
-remote_control(bot)
+# remote_control(bot)
+for i in range(0, len(POINT_LIST)):
+    bot.move_to(POINT_LIST[i])
+    time.sleep(0.5)
+    measure(bot)
+    print(bot.measurement)
 
 bot.set_motor_speed(0, 0)
+time.sleep(1)
+bot.set_leds(0, 0, 0)
 
 print(bot.position)
 print(bot.acceleration)

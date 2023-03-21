@@ -154,21 +154,22 @@ class Rover:
 
             if (self.position['h'] >= 0 and goal_heading > 0):
                 heading_error = self.position['h'] - goal_heading
-                # print("fall 1")
+                print("fall 1")
             elif (self.position['h'] <= 0 and goal_heading < 0):
                 heading_error = self.position['h'] - goal_heading
-                # print("fall 2")
+                print("fall 2")
             else:
                 heading_error = abs(self.position['h']) + abs(goal_heading)
                 heading_error = heading_error * np.sign(self.position["h"])
 
-                # print("fall 3")
+                print("fall 3")
                 if abs(heading_error) > 180:
                     heading_error = np.sign(
                         goal_heading)*(360-abs(heading_error))
-                    # print("fall 4")
+                    print("fall 4")
 
-            # print(f'{goal_heading} {self.position["h"]} {heading_error} {dist}')
+            print(
+                f'{goal_heading} {self.position["h"]} {heading_error} {dist}')
 
             self._heading_error_i = self._heading_error_i + heading_error*self.delta_t
             turn_speed = heading_error * KP_turn + self._heading_error_i * KI_turn
@@ -188,7 +189,7 @@ class Rover:
             if (right_speed < -MAX_SPEED):
                 right_speed = -MAX_SPEED
 
-            # print(f'{dist}: {left_speed} / {right_speed}')
+            print(f'{dist}: {left_speed} / {right_speed}')
 
             self.set_motor_speed(right_speed, left_speed)
 
@@ -268,8 +269,15 @@ class Rover:
 
             return False
 
-    def __init__(self):
+    def disconnect(self):
+        self._client.unsubscribe(f'robot/{self.id}/position')
+        self._client.unsubscribe(f'robot/{self.id}/accel')
+        self._client.unsubscribe(f'robot/{self.id}/status')
+        self._client.unsubscribe(f'robot/{self.id}/measurement')
+        self._client.unsubscribe(f'user/{self.id}/message')
+        self._client.disconnect()
 
+    def __init__(self):
         config = configparser.ConfigParser()
         config.read('rover.properties')
 
