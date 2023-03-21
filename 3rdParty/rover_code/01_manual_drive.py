@@ -1,6 +1,9 @@
 from rover_base import Rover
 from getkey import getkey, keys
+from perlin_noise import PerlinNoise
 import time
+import numpy as np
+import matplotlib.pyplot as plt
 
 SPEED = 70
 TURNING_DURATION = 3
@@ -54,20 +57,49 @@ def measure(bot):
         time.sleep(1)
 
 
-bot = Rover()
-bot.beep()
+def generate_terrain(seed: int):
+    shape = (200, 200)
+    noise = PerlinNoise(octaves=2, seed=seed)
+
+    world = [[noise([i/shape[0], j/shape[1]])
+              for j in range(shape[0])] for i in range(shape[1])]
+
+    lin_x = np.linspace(0, 1, shape[0], endpoint=False)
+    lin_y = np.linspace(0, 1, shape[1], endpoint=False)
+    x, y = np.meshgrid(lin_x, lin_y)
+
+    return (x, y, world)
+
+
+def drawColorPlot(x, y, z):
+    color_count = 70
+
+    fig = plt.Figure()
+    plt.contourf(x, y, z, color_count, cmap="hot")
+    plt.colorbar()
+    plt.show()
+
+
+# bot = Rover()
+# bot.beep()
+
+x, y, z = generate_terrain(0.5)
+# print(x)
+# print(y)
+# print(z)
+drawColorPlot(x, y, z)
 
 # remote_control(bot)
-for i in range(0, len(POINT_LIST)):
-    bot.move_to(POINT_LIST[i])
-    time.sleep(0.5)
-    measure(bot)
-    print(bot.measurement)
+# for i in range(0, len(POINT_LIST)):
+#     bot.move_to(POINT_LIST[i])
+#     time.sleep(0.5)
+#     measure(bot)
+#     print(bot.measurement)
 
-bot.set_motor_speed(0, 0)
-time.sleep(1)
-bot.set_leds(0, 0, 0)
+# bot.set_motor_speed(0, 0)
+# time.sleep(1)
+# bot.set_leds(0, 0, 0)
 
-print(bot.position)
-print(bot.acceleration)
-print(bot.status)
+# print(bot.position)
+# print(bot.acceleration)
+# print(bot.status)
