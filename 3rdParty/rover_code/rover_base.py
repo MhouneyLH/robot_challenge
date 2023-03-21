@@ -1,5 +1,4 @@
 import paho.mqtt.client as mqtt
-from getkey import getkey, keys
 import json
 import time
 import numpy as np
@@ -7,9 +6,6 @@ import configparser
 
 MAX_SPEED = 100
 MIN_SPEED = 15
-SPEED = 70
-TURNING_DURATION = 3
-TURNING_SPEED = 70
 
 
 class Rover:
@@ -31,33 +27,6 @@ class Rover:
     _heading_error_i = 0
     _dist_i = 0
     _heading_error = []
-
-    #############################################
-    def turn_right(self):
-        self.set_motor_speed(TURNING_SPEED, -TURNING_SPEED)
-        # time.sleep(TURNING_DURATION)
-
-    def turn_left(self):
-        self.set_motor_speed(-TURNING_SPEED, TURNING_SPEED)
-        # time.sleep(TURNING_DURATION)
-
-    def remote_control(self):
-        key = "0"
-        while key != "b":
-            key = getkey()
-
-            match key:
-                case "w":
-                    self.set_motor_speed(SPEED, SPEED)
-                case "s":
-                    self.set_motor_speed(-SPEED, -SPEED)
-                case "a":
-                    self.turn_left()
-                case "d":
-                    self.turn_right()
-                case "c":
-                    self.set_motor_speed(0, 0)
-    #############################################
 
     def wait_for_position(self):
         while (not self.position):
