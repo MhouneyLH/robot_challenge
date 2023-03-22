@@ -92,23 +92,27 @@ def get_random_points_in_field(point_count):
     return random_point_array
 
 
-def explore_points(bot: Rover, point_list):
+def explore_points_and_get_list_with_concentration(bot: Rover, point_list):
+    result_list = []
     for point in point_list:
         bot.move_to(point)
         measure(bot)
-        print(bot.measurement)
+        result_list.append(
+            [bot.position['x'], bot.position['y'], bot.measurement])
+
+    return result_list
 
 
 bot = Rover()
 bot.beep()
 
-# x, y, z = generate_terrain(0.5)
-# drawColorPlot(x, y, z)
-
 # remote_control(bot)
 point_list = get_random_points_in_field(5)
-print(point_list)
-explore_points(bot, point_list)
+print("Generated Points:" + point_list)
+
+explored_points_list = explore_points_and_get_list_with_concentration(
+    bot, point_list)
+print("Explored Points:" + explored_points_list)
 
 bot.set_motor_speed(0, 0)
 time.sleep(1)
