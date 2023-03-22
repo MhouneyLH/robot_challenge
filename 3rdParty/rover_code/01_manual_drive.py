@@ -91,7 +91,7 @@ def get_random_points_in_field(point_count):
 def explore_points_and_get_list_with_concentration(bot: Rover, point_list):
     result_list = []
     for point in point_list:
-        bot.move_to(point)
+        bot.move_to(point, threshold=DEFAULT_THRESHOLD)
         measure(bot)
         result_list.append(
             [bot.position['x'], bot.position['y'], bot.measurement])
@@ -127,6 +127,19 @@ def simplex(bot: Rover, p1):
     bot.move_to(p3, threshold=DEFAULT_THRESHOLD)
     p3 = measure_and_update_values(bot)
 
+def get_point_with_highest_concentration(points_list):
+    result = [-1, -1, -1]
+    for point in points_list:
+        concentration = point[2]
+        if (concentration <= result[2]):
+            continue
+
+        result = point
+
+    return result
+
+
+def simplex(p1, p2, p3):
     point_list = [p1, p2, p3]
     print("point_list", point_list)
 
@@ -204,14 +217,17 @@ bot = Rover()
 bot.beep()
 
 # remote_control(bot)
-# point_list = get_random_points_in_field(5)
-# print("Generated Points:" + point_list)
+point_list = get_random_points_in_field(2)
+print("Generated Points:" + str(point_list))
 
-# explored_points_list = explore_points_and_get_list_with_concentration(
-#   bot, point_list)
-# print("Explored Points:" + explored_points_list)
+explored_points_list = explore_points_and_get_list_with_concentration(
+    bot, point_list)
+print("Explored Points:" + str(explored_points_list))
 
 explored_point = (1105, 452, 101)
+max_point = get_point_with_highest_concentration(explored_points_list)
+print(max_point)
+# simplex(max_point)
 
 bot.move_to(explored_point)
 time.sleep(1)
