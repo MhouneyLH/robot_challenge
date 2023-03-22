@@ -9,6 +9,8 @@ SPEED = 70
 TURNING_DURATION = 3
 TURNING_SPEED = 70
 MEASUREMENT_DEFAULT_VALUE = -1
+FIELD_WIDTH = 2000
+FIELD_HEIGHT = 1000
 POINT_LIST = [
     (100, 100),
     [100, 900],
@@ -80,26 +82,23 @@ def drawColorPlot(x, y, z):
     plt.show()
 
 
-# bot = Rover()
-# bot.beep()
+bot = Rover()
+bot.beep()
 
-x, y, z = generate_terrain(0.5)
-# print(x)
-# print(y)
-# print(z)
-drawColorPlot(x, y, z)
+# x, y, z = generate_terrain(0.5)
+# drawColorPlot(x, y, z)
 
-# remote_control(bot)
+remote_control(bot)
 # for i in range(0, len(POINT_LIST)):
 #     bot.move_to(POINT_LIST[i])
 #     time.sleep(0.5)
 #     measure(bot)
 #     print(bot.measurement)
 
-# bot.set_motor_speed(0, 0)
-# time.sleep(1)
-# bot.set_leds(0, 0, 0)
+bot.set_motor_speed(0, 0)
+time.sleep(1)
+bot.set_leds(0, 0, 0)
 
-# print(bot.position)
-# print(bot.acceleration)
-# print(bot.status)
+print(bot.position)
+print(bot.acceleration)
+print(bot.status)

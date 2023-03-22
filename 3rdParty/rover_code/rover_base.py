@@ -282,8 +282,9 @@ class Rover:
         config.read('rover.properties')
 
         self.id = config.get("rover", "rover_id")
+        user_id = config.get("rover", "user_id")
 
-        self._client = mqtt.Client(f'User-{self.id}')
+        self._client = mqtt.Client(f'User-{user_id}')
         self._client.on_message = self._on_message
 
         self._client.connect(config.get("mqtt", "broker_ip"))
