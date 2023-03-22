@@ -12,13 +12,6 @@ MEASUREMENT_DEFAULT_VALUE = -1
 FIELD_WIDTH = 2000
 FIELD_HEIGHT = 1000
 FIELD_BOUNDARY = 100
-POINT_LIST = [
-    [100, 100],
-    [100, 900],
-    [1000, 500],
-    [1700, 800],
-    [1700, 100],
-]
 
 
 def turn_right(bot: Rover):
@@ -103,6 +96,21 @@ def explore_points_and_get_list_with_concentration(bot: Rover, point_list):
     return result_list
 
 
+def simplex(p1, p2, p3):
+    point_list = [p1, p2, p3]
+
+    print(point_list)
+
+    # sortieren der Punkte
+    sorted_list = sorted(point_list, key=lambda tupel: tupel[2], reverse=True)
+    print(sorted_list)
+
+    # Mittelpunkt der zwei besten Werte
+    m = (((sorted_list[0][0] + sorted_list[1][0])/2),
+         ((sorted_list[0][1] + sorted_list[1][1])/2),)
+    print("Mittelpunkt: ", m)
+
+
 bot = Rover()
 bot.beep()
 
@@ -113,6 +121,9 @@ print("Generated Points:" + point_list)
 explored_points_list = explore_points_and_get_list_with_concentration(
     bot, point_list)
 print("Explored Points:" + explored_points_list)
+
+simplex(explored_points_list[0],
+        explored_points_list[1], explored_points_list[2])
 
 bot.set_motor_speed(0, 0)
 time.sleep(1)
