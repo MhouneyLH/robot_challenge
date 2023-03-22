@@ -3,9 +3,10 @@ import json
 import time
 import numpy as np
 import configparser
+import random
 
 MAX_SPEED = 100
-MIN_SPEED = 15
+BATT_WARNING = 2700
 
 
 class Rover:
@@ -20,6 +21,7 @@ class Rover:
     servos = {'pos': [90, 90]}
     status = False  # {'bat':0, 'FW':0.54}
     measurement = -1
+    overwatch_id = -1
 
     _t_start = 0
     delta_t = 0.2
@@ -80,11 +82,14 @@ class Rover:
 
     def beep(self):
         self._client.publish(f'robot/{self.id}/beep', "{}", qos=1)
+        time.sleep(0.2)
 
     def cheat(self):
         print("activated cheat measurement")
         self.beep()
-        self._client.publish(f'overwatch/cheat', self.id, qos=1)
+        self._client.publish(
+            f'overwatch/{self.overwatch_id}/cheat', self.id, qos=1)
+        time.sleep(0.2)
 
     def _on_message(self, client, userdata, message):
         if (message.topic == f'robot/{self.id}/accel'):
@@ -94,12 +99,9 @@ class Rover:
             self.position = json.loads(message.payload)
         elif (message.topic == f'robot/{self.goal_id}/position'):
             self.goal_position = json.loads(message.payload)
-        elif (message.topic == f'user/{self.id}/message'):
-            print(message.payload)
-            quit()
         elif (message.topic == f'robot/{self.id}/status'):
             self.status = json.loads(message.payload)
-            if (int(self.status['bat']) < 2700):
+            if (int(self.status['bat']) < BATT_WARNING):
                 print("warning: low battery!")
         elif (message.topic == f'robot/{self.id}/measurement'):
             self.measurement = int(message.payload)
@@ -154,22 +156,21 @@ class Rover:
 
             if (self.position['h'] >= 0 and goal_heading > 0):
                 heading_error = self.position['h'] - goal_heading
-                print("fall 1")
+                # print("fall 1")
             elif (self.position['h'] <= 0 and goal_heading < 0):
                 heading_error = self.position['h'] - goal_heading
-                print("fall 2")
+                # print("fall 2")
             else:
                 heading_error = abs(self.position['h']) + abs(goal_heading)
                 heading_error = heading_error * np.sign(self.position["h"])
 
-                print("fall 3")
+                # print("fall 3")
                 if abs(heading_error) > 180:
                     heading_error = np.sign(
                         goal_heading)*(360-abs(heading_error))
-                    print("fall 4")
+                    # print("fall 4")
 
-            print(
-                f'{goal_heading} {self.position["h"]} {heading_error} {dist}')
+            # print(f'{goal_heading} {self.position["h"]} {heading_error} {dist}')
 
             self._heading_error_i = self._heading_error_i + heading_error*self.delta_t
             turn_speed = heading_error * KP_turn + self._heading_error_i * KI_turn
@@ -189,7 +190,7 @@ class Rover:
             if (right_speed < -MAX_SPEED):
                 right_speed = -MAX_SPEED
 
-            print(f'{dist}: {left_speed} / {right_speed}')
+            # print(f'{dist}: {left_speed} / {right_speed}')
 
             self.set_motor_speed(right_speed, left_speed)
 
@@ -274,17 +275,19 @@ class Rover:
         self._client.unsubscribe(f'robot/{self.id}/accel')
         self._client.unsubscribe(f'robot/{self.id}/status')
         self._client.unsubscribe(f'robot/{self.id}/measurement')
-        self._client.unsubscribe(f'user/{self.id}/message')
         self._client.disconnect()
+        print(f'Rover {self.id} disconnected.')
 
     def __init__(self):
+
         config = configparser.ConfigParser()
         config.read('rover.properties')
 
         self.id = config.get("rover", "rover_id")
-        user_id = config.get("rover", "user_id")
+        user_id = random.randint(0, 1000000000000)
+        self.overwatch_id = config.get("rover", "field_id")
 
-        self._client = mqtt.Client(f'User-{user_id}')
+        self._client = mqtt.Client(f'u{user_id}')
         self._client.on_message = self._on_message
 
         self._client.connect(config.get("mqtt", "broker_ip"))
@@ -293,7 +296,6 @@ class Rover:
         self._client.subscribe(f'robot/{self.id}/accel')
         self._client.subscribe(f'robot/{self.id}/status')
         self._client.subscribe(f'robot/{self.id}/measurement')
-        self._client.subscribe(f'user/{self.id}/message')
 
         print(f'Rover {self.id} started.')
 

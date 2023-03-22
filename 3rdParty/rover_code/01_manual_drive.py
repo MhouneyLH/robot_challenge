@@ -12,11 +12,11 @@ MEASUREMENT_DEFAULT_VALUE = -1
 FIELD_WIDTH = 2000
 FIELD_HEIGHT = 1000
 POINT_LIST = [
-    (100, 100),
-    [100, 900],
-    [1000, 500],
-    [1900, 900],
-    [1900, 100],
+    # (100, 100),
+    # [100, 900],
+    # [1000, 500],
+    [1700, 800],
+    [1700, 100],
 ]
 
 
@@ -89,11 +89,11 @@ bot.beep()
 # drawColorPlot(x, y, z)
 
 remote_control(bot)
-# for i in range(0, len(POINT_LIST)):
-#     bot.move_to(POINT_LIST[i])
-#     time.sleep(0.5)
-#     measure(bot)
-#     print(bot.measurement)
+for i in range(0, len(POINT_LIST)):
+    bot.move_to(POINT_LIST[i])
+    time.sleep(0.5)
+    measure(bot)
+    print(bot.measurement)
 
 bot.set_motor_speed(0, 0)
 time.sleep(1)
