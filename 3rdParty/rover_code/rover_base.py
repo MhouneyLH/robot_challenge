@@ -1,15 +1,12 @@
 import paho.mqtt.client as mqtt
-from getkey import getkey, keys
 import json
 import time
 import numpy as np
 import configparser
+import random
 
 MAX_SPEED = 100
-MIN_SPEED = 15
-SPEED = 70
-TURNING_DURATION = 3
-TURNING_SPEED = 70
+BATT_WARNING = 2700
 
 
 class Rover:
@@ -24,6 +21,7 @@ class Rover:
     servos = {'pos': [90, 90]}
     status = False  # {'bat':0, 'FW':0.54}
     measurement = -1
+    overwatch_id = -1
 
     _t_start = 0
     delta_t = 0.2
@@ -31,33 +29,6 @@ class Rover:
     _heading_error_i = 0
     _dist_i = 0
     _heading_error = []
-
-    #############################################
-    def turn_right(self):
-        self.set_motor_speed(TURNING_SPEED, -TURNING_SPEED)
-        # time.sleep(TURNING_DURATION)
-
-    def turn_left(self):
-        self.set_motor_speed(-TURNING_SPEED, TURNING_SPEED)
-        # time.sleep(TURNING_DURATION)
-
-    def remote_control(self):
-        key = "0"
-        while key != "b":
-            key = getkey()
-
-            match key:
-                case "w":
-                    self.set_motor_speed(SPEED, SPEED)
-                case "s":
-                    self.set_motor_speed(-SPEED, -SPEED)
-                case "a":
-                    self.turn_left()
-                case "d":
-                    self.turn_right()
-                case "c":
-                    self.set_motor_speed(0, 0)
-    #############################################
 
     def wait_for_position(self):
         while (not self.position):
@@ -111,11 +82,14 @@ class Rover:
 
     def beep(self):
         self._client.publish(f'robot/{self.id}/beep', "{}", qos=1)
+        time.sleep(0.2)
 
     def cheat(self):
         print("activated cheat measurement")
         self.beep()
-        self._client.publish(f'overwatch/cheat', self.id, qos=1)
+        self._client.publish(
+            f'overwatch/{self.overwatch_id}/cheat', self.id, qos=1)
+        time.sleep(0.2)
 
     def _on_message(self, client, userdata, message):
         if (message.topic == f'robot/{self.id}/accel'):
@@ -125,12 +99,9 @@ class Rover:
             self.position = json.loads(message.payload)
         elif (message.topic == f'robot/{self.goal_id}/position'):
             self.goal_position = json.loads(message.payload)
-        elif (message.topic == f'user/{self.id}/message'):
-            print(message.payload)
-            quit()
         elif (message.topic == f'robot/{self.id}/status'):
             self.status = json.loads(message.payload)
-            if (int(self.status['bat']) < 2700):
+            if (int(self.status['bat']) < BATT_WARNING):
                 print("warning: low battery!")
         elif (message.topic == f'robot/{self.id}/measurement'):
             self.measurement = int(message.payload)
@@ -299,14 +270,24 @@ class Rover:
 
             return False
 
+    def disconnect(self):
+        self._client.unsubscribe(f'robot/{self.id}/position')
+        self._client.unsubscribe(f'robot/{self.id}/accel')
+        self._client.unsubscribe(f'robot/{self.id}/status')
+        self._client.unsubscribe(f'robot/{self.id}/measurement')
+        self._client.disconnect()
+        print(f'Rover {self.id} disconnected.')
+
     def __init__(self):
 
         config = configparser.ConfigParser()
         config.read('rover.properties')
 
         self.id = config.get("rover", "rover_id")
+        user_id = random.randint(0, 1000000000000)
+        self.overwatch_id = config.get("rover", "field_id")
 
-        self._client = mqtt.Client(f'User-{self.id}')
+        self._client = mqtt.Client(f'u{user_id}')
         self._client.on_message = self._on_message
 
         self._client.connect(config.get("mqtt", "broker_ip"))
@@ -315,7 +296,6 @@ class Rover:
         self._client.subscribe(f'robot/{self.id}/accel')
         self._client.subscribe(f'robot/{self.id}/status')
         self._client.subscribe(f'robot/{self.id}/measurement')
-        self._client.subscribe(f'user/{self.id}/message')
 
         print(f'Rover {self.id} started.')
 
