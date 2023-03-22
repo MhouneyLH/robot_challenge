@@ -11,10 +11,11 @@ TURNING_SPEED = 70
 MEASUREMENT_DEFAULT_VALUE = -1
 FIELD_WIDTH = 2000
 FIELD_HEIGHT = 1000
+FIELD_BOUNDARY = 100
 POINT_LIST = [
-    # (100, 100),
-    # [100, 900],
-    # [1000, 500],
+    [100, 100],
+    [100, 900],
+    [1000, 500],
     [1700, 800],
     [1700, 100],
 ]
@@ -82,18 +83,32 @@ def drawColorPlot(x, y, z):
     plt.show()
 
 
+def get_random_points_in_field(point_count):
+    random_point_array = np.random.randint(
+        low=FIELD_BOUNDARY, high=FIELD_WIDTH-FIELD_BOUNDARY + 1, size=(point_count, 1))
+    random_point_array = np.hstack(
+        (random_point_array, np.random.randint(low=FIELD_BOUNDARY, high=FIELD_HEIGHT-FIELD_BOUNDARY + 1, size=(point_count, 1))))
+
+    return random_point_array
+
+
+def explore_points(bot: Rover, point_list):
+    for point in point_list:
+        bot.move_to(point)
+        measure(bot)
+        print(bot.measurement)
+
+
 bot = Rover()
 bot.beep()
 
 # x, y, z = generate_terrain(0.5)
 # drawColorPlot(x, y, z)
 
-remote_control(bot)
-for i in range(0, len(POINT_LIST)):
-    bot.move_to(POINT_LIST[i])
-    time.sleep(0.5)
-    measure(bot)
-    print(bot.measurement)
+# remote_control(bot)
+point_list = get_random_points_in_field(5)
+print(point_list)
+explore_points(bot, point_list)
 
 bot.set_motor_speed(0, 0)
 time.sleep(1)
