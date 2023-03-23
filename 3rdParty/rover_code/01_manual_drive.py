@@ -1,6 +1,5 @@
 from rover_base import Rover
 from getkey import getkey, keys
-from perlin_noise import PerlinNoise
 import time
 import numpy as np
 import matplotlib.pyplot as plt
@@ -49,17 +48,26 @@ def remote_control(bot: Rover):
             case "c":
                 bot.set_motor_speed(0, 0)
             case "m":
-                measure(bot)
-                print(bot.measurement)
+                print(measure_with_cheats(bot))
 
 ######################################
 # HELPER_FUNCTIONS
 ######################################
 
 
-def measure(bot):
+def measure_with_cheats(bot):
     bot.measurement = MEASUREMENT_DEFAULT_VALUE
     bot.cheat()
+
+    while bot.measurement == MEASUREMENT_DEFAULT_VALUE:
+        time.sleep(1)
+
+    return bot.measurement
+
+
+def measure(bot):
+    bot.measurement = MEASUREMENT_DEFAULT_VALUE
+    bot.set_servo1_pos(180)
 
     while bot.measurement == MEASUREMENT_DEFAULT_VALUE:
         time.sleep(1)
@@ -80,7 +88,7 @@ def explore_points_and_get_list_with_concentration(bot: Rover, point_list):
     result_list = []
     for point in point_list:
         bot.move_to(point, threshold=DEFAULT_THRESHOLD)
-        measure(bot)
+        measure_with_cheats(bot)
         result_list.append(
             [bot.position['x'], bot.position['y'], bot.measurement])
 
@@ -107,13 +115,14 @@ def get_point_with_highest_concentration(points_list):
 def stop(bot: Rover):
     bot.set_motor_speed(0, 0)
     time.sleep(1)
+
+    bot.beep()
     bot.set_leds(0, 0, 0)
+    bot.set_servo1_pos(0)
 
     print(bot.position)
     print(bot.acceleration)
     print(bot.status)
-
-    bot.beep()
 
     bot.disconnect()
 
@@ -121,7 +130,7 @@ def stop(bot: Rover):
 def get_real_values(bot: Rover, point):
     bot.move_to(point, threshold=DEFAULT_THRESHOLD)
     time.sleep(1)
-    measure(bot)
+    measure_with_cheats(bot)
 
     result = [bot.position["x"], bot.position["y"], bot.measurement]
     if (isNewHighestPoint(result)):
