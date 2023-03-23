@@ -11,13 +11,21 @@ FIELD_WIDTH = 2000
 FIELD_HEIGHT = 1000
 FIELD_BOUNDARY = 200
 DEFAULT_THRESHOLD = 50
-FINISH_VALUE = 246
+FINISH_VALUE = 240
 MAXIMUM_LOOP_COUNT = 5
 SERVO_UP = 180
 SERVO_DOWN = 0
 
 
 highest_point = [-1, -1, MEASUREMENT_DEFAULT_VALUE]
+GLOBAL_POINTS = [
+    [FIELD_WIDTH / 2, FIELD_HEIGHT / 2, MEASUREMENT_DEFAULT_VALUE],
+    [FIELD_BOUNDARY, FIELD_HEIGHT - FIELD_BOUNDARY, MEASUREMENT_DEFAULT_VALUE],
+    [FIELD_WIDTH - FIELD_BOUNDARY, FIELD_HEIGHT -
+        FIELD_BOUNDARY, MEASUREMENT_DEFAULT_VALUE],
+    [FIELD_BOUNDARY, FIELD_BOUNDARY, MEASUREMENT_DEFAULT_VALUE],
+    [FIELD_WIDTH - FIELD_BOUNDARY, FIELD_BOUNDARY, MEASUREMENT_DEFAULT_VALUE],
+]
 all_point_list = []
 
 ######################################
@@ -74,35 +82,15 @@ def remote_control(bot: Rover):
 def measure(bot):
     bot.measurement = MEASUREMENT_DEFAULT_VALUE
     bot.set_servo1_pos(SERVO_DOWN)
-    # i = 0
+    i = 0
     while bot.measurement == MEASUREMENT_DEFAULT_VALUE:
-        # i += 1
-        # if i % 5 == 0:
-        #     bot.set_servo1_pos(SERVO_UP)
-        #     bot.set_servo1_pos(SERVO_DOWN)
+        i += 1
+        if i % 5 == 0:
+            bot.set_servo1_pos(SERVO_UP)
+            bot.set_servo1_pos(SERVO_DOWN)
         time.sleep(1)
     bot.set_servo1_pos(SERVO_UP)
     return bot.measurement
-
-
-def get_random_points_in_field(point_count):
-    random_point_array = np.random.randint(
-        low=FIELD_BOUNDARY, high=FIELD_WIDTH-FIELD_BOUNDARY + 1, size=(point_count, 1))
-    random_point_array = np.hstack(
-        (random_point_array, np.random.randint(low=FIELD_BOUNDARY, high=FIELD_HEIGHT-FIELD_BOUNDARY + 1, size=(point_count, 1))))
-
-    return random_point_array
-
-
-def explore_points_and_get_list_with_concentration(bot: Rover, point_list):
-    result_list = []
-    for point in point_list:
-        bot.move_to(point, speed=SPEED, threshold=DEFAULT_THRESHOLD)
-        measure(bot)
-        result_list.append(
-            [bot.position['x'], bot.position['y'], bot.measurement])
-
-    return result_list
 
 
 def isNewHighestPoint(point):
@@ -122,6 +110,11 @@ def get_point_with_highest_concentration(points_list):
     return result
 
 
+def start(bot: Rover):
+    bot.set_leds(0, 0, 30)
+    bot.set_servo1_pos(SERVO_UP)
+
+
 def stop(bot: Rover):
     global highest_point
 
@@ -130,7 +123,7 @@ def stop(bot: Rover):
 
     bot.beep()
     bot.set_leds(0, 0, 0)
-    bot.set_servo1_pos(180)
+    bot.set_servo1_pos(SERVO_UP)
 
     print("Highest found point", highest_point)
     print(bot.position)
@@ -157,18 +150,46 @@ def get_boundary_checked_point(point):
     return result
 
 
+def point_is_already_in_database(point):
+    point_x = point[0]
+    point_y = point[1]
+
+    threshold = DEFAULT_THRESHOLD / 2
+
+    for item in all_point_list:
+        item_x = item[0]
+        item_y = item[1]
+        # ähnlicher Punkt kann gefunden werden
+        if (point_x >= item_x - threshold and point_x <= item_x + threshold) and \
+                (point_y >= item_y - threshold and point_y <= item_y + threshold):
+            return True, item
+
+    return False, point
+
+
 def get_real_values(bot: Rover, point):
+    global all_point_list
+    global highest_point
+
     checked_point = get_boundary_checked_point(point)
     print("checked_point", checked_point)
 
-    bot.move_to(checked_point, speed=SPEED, threshold=DEFAULT_THRESHOLD)
-    time.sleep(1)
-    measure(bot)
+    test, test1 = point_is_already_in_database(checked_point)
+    # if (test):
+    if (False):
+        print("Jetzt passierts----------------------")
+        result = test1
+    else:
+        bot.move_to(checked_point, speed=SPEED, threshold=DEFAULT_THRESHOLD)
+        time.sleep(1)
+        measure(bot)
 
-    result = [bot.position["x"], bot.position["y"], bot.measurement]
+        result = [bot.position["x"], bot.position["y"], bot.measurement]
+        all_point_list.append(result)
 
     if (isNewHighestPoint(result)):
         highest_point = result
+
         if has_higher_concentration(highest_point, [-1, -1, FINISH_VALUE]):
             stop(bot)
             exit()
@@ -203,6 +224,9 @@ def calculate_special_point2(p1, p2, constant):
     return result
 
 
+temp_list = []
+
+
 def simplex(bot: Rover, p1):
     global highest_point
 
@@ -217,13 +241,16 @@ def simplex(bot: Rover, p1):
     p2 = get_real_values(bot, exact_p2)
     p3 = get_real_values(bot, exact_p3)
 
-    starting_list = [p1, p2, p3]
-    print("starting_list", starting_list)
+    current_list = [p1, p2, p3]
+    print("current_list", current_list)
 
+    test_loop_count = MAXIMUM_LOOP_COUNT
     for i in range(0, MAXIMUM_LOOP_COUNT):
+        if (highest_point >= FINISH_VALUE - 20):
+            test_loop_count = MAXIMUM_LOOP_COUNT * 2
         print("Highest Point", str(highest_point))
 
-        sorted_list = get_ascended_sorted_list(starting_list)
+        sorted_list = get_ascended_sorted_list(current_list)
         print("sorted_list ", sorted_list)
 
         best_point = sorted_list[0]
@@ -247,12 +274,15 @@ def simplex(bot: Rover, p1):
 
             if has_higher_concentration(expand_point, reflection_point):
                 worst_point = expand_point
+                # current_list = [best_point, second_best, worst_point]
                 continue
 
             worst_point = reflection_point
+            # current_list = [best_point, second_best, worst_point]
             continue
         elif has_higher_concentration(reflection_point, second_best):
             worst_point = reflection_point
+            # current_list = [best_point, second_best, worst_point]
             continue
 
         h = reflection_point if has_higher_concentration(
@@ -264,11 +294,14 @@ def simplex(bot: Rover, p1):
 
         if has_higher_concentration(contracting_point, worst_point):
             worst_point = contracting_point
+            # current_list = [best_point, second_best, worst_point]
             continue
 
-        temp_list =
-        for item in sorted_list:
-            item = calculate_special_point2(item, best_point, DELTA)
+        # print(current_list)
+        # for j in range(0, len(current_list)):
+        #     current_list[j] = calculate_special_point2(
+        #         current_list[j], best_point, DELTA)
+        # print(current_list)
 
 
 ######################################
@@ -277,27 +310,15 @@ def simplex(bot: Rover, p1):
 bot = Rover()
 bot.beep()
 
-bot.set_leds(0, 0, 30)
-
+# start(bot)
+bot.set_motor_speed(40, 40)
+time.sleep(1)
 # remote_control(bot)
-# point_list = get_random_points_in_field(2)
-# print("Generated Points:" + str(point_list))
 
-# explored_points_list = explore_points_and_get_list_with_concentration(
-#     bot, point_list)
-# print("Explored Points:" + str(explored_points_list))
+# for point in GLOBAL_POINTS:
+#     simplex(bot, point)
 
-explored_point = [650, 632, 98]
-# explored_point = [1000, 500, 51]
-# max_point = get_point_with_highest_concentration(explored_points_list)
-# print(max_point)
-bot.set_servo1_pos(180)
-simplex(bot, explored_point)
-
-# print(measure(bot))
-
-
-# bot.set_servo1_pos(180)
-
-bot.set_leds(0, 0, 0)
+# bot.move_to(highest_point, speed=SPEED, threshold=DEFAULT_THRESHOLD)
 stop(bot)
+
+{'bat': 2805, 'FW': 0.55}
