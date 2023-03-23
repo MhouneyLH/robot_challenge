@@ -13,7 +13,8 @@ FIELD_WIDTH = 2000
 FIELD_HEIGHT = 1000
 FIELD_BOUNDARY = 100
 DEFAULT_THRESHOLD = 50
-FINISH_VALUE = 235
+FINISH_VALUE = 225
+MAXIMUM_LOOP_COUNT = 1000
 
 
 highest_point = [-1, -1, MEASUREMENT_DEFAULT_VALUE]
@@ -123,13 +124,13 @@ def get_real_values(bot: Rover, point):
     measure(bot)
 
     result = [bot.position["x"], bot.position["y"], bot.measurement]
-    if (not isNewHighestPoint(result)):
-        return result
+    if (isNewHighestPoint(result)):
+        highest_point = result
+        if has_higher_concentration(highest_point, [-1, -1, FINISH_VALUE]):
+            stop(bot)
+            exit()
 
-    highest_point = result
-    if has_higher_concentration(highest_point, FINISH_VALUE):
-        stop(bot)
-        exit()
+    return result
 
 
 def get_ascended_sorted_list(points_list):
@@ -176,7 +177,7 @@ def simplex(bot: Rover, p1):
     point_list = [p1, p2, p3]
     print("point_list", point_list)
 
-    while True:
+    for i in range(0, MAXIMUM_LOOP_COUNT):
         print("Highest Point", str(highest_point))
 
         sorted_list = get_ascended_sorted_list(point_list)
@@ -244,7 +245,7 @@ bot.set_leds(0, 0, 30)
 # print("Explored Points:" + str(explored_points_list))
 
 # explored_point = [1105, 452, 101]
-explored_point = [967, 493, 84]
+explored_point = [606, 795, 51]
 # max_point = get_point_with_highest_concentration(explored_points_list)
 # print(max_point)
 time.sleep(1)
