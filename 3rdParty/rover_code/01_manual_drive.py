@@ -1,8 +1,7 @@
 from rover_base import Rover
-from getkey import getkey, keys
+from getkey import getkey
 import time
 import numpy as np
-import matplotlib.pyplot as plt
 
 SPEED = 70
 TURNING_DURATION = 3
@@ -10,10 +9,12 @@ TURNING_SPEED = 70
 MEASUREMENT_DEFAULT_VALUE = -1
 FIELD_WIDTH = 2000
 FIELD_HEIGHT = 1000
-FIELD_BOUNDARY = 100
+FIELD_BOUNDARY = 200
 DEFAULT_THRESHOLD = 50
 FINISH_VALUE = 225
 MAXIMUM_LOOP_COUNT = 1000
+SERVO_UP = 180
+SERVO_DOWN = 25
 
 
 highest_point = [-1, -1, MEASUREMENT_DEFAULT_VALUE]
@@ -48,18 +49,22 @@ def remote_control(bot: Rover):
             case "c":
                 bot.set_motor_speed(0, 0)
             case "m":
-                print(measure_with_cheats(bot))
+                print(measure(bot))
 
 ######################################
 # HELPER_FUNCTIONS
 ######################################
 
 
-def measure_with_cheats(bot):
+def measure(bot):
     bot.measurement = MEASUREMENT_DEFAULT_VALUE
     bot.cheat()
 
+    i = 0
     while bot.measurement == MEASUREMENT_DEFAULT_VALUE:
+        i += 1
+        if i % 5 == 0:
+            bot.cheat()
         time.sleep(1)
 
     return bot.measurement
@@ -67,11 +72,17 @@ def measure_with_cheats(bot):
 
 def measure(bot):
     bot.measurement = MEASUREMENT_DEFAULT_VALUE
-    bot.set_servo1_pos(180)
+    bot.set_servo1_pos(SERVO_DOWN)
 
+    i = 0
     while bot.measurement == MEASUREMENT_DEFAULT_VALUE:
+        i += 1
+        if i % 5 == 0:
+            bot.set_servo1_pos(SERVO_UP)
+            bot.set_servo1_pos(SERVO_DOWN)
         time.sleep(1)
 
+    bot.set_servo1_pos(SERVO_UP)
     return bot.measurement
 
 
@@ -88,7 +99,7 @@ def explore_points_and_get_list_with_concentration(bot: Rover, point_list):
     result_list = []
     for point in point_list:
         bot.move_to(point, threshold=DEFAULT_THRESHOLD)
-        measure_with_cheats(bot)
+        measure(bot)
         result_list.append(
             [bot.position['x'], bot.position['y'], bot.measurement])
 
@@ -127,15 +138,36 @@ def stop(bot: Rover):
     bot.disconnect()
 
 
+def get_boundary_checked_point(point):
+    x = point[0]
+    y = point[1]
+
+    if (x < FIELD_BOUNDARY):
+        x = FIELD_BOUNDARY
+    elif (x > FIELD_WIDTH - FIELD_BOUNDARY):
+        x = FIELD_WIDTH - FIELD_BOUNDARY
+    if (y < FIELD_BOUNDARY):
+        y = FIELD_BOUNDARY
+    elif (y > FIELD_HEIGHT - FIELD_BOUNDARY):
+        y = FIELD_HEIGHT - FIELD_BOUNDARY
+
+    result = [x, y]
+    return result
+
+
 def get_real_values(bot: Rover, point):
-    bot.move_to(point, threshold=DEFAULT_THRESHOLD)
+    checked_point = get_boundary_checked_point(point)
+    print("checked_point", checked_point)
+
+    bot.move_to(checked_point, threshold=DEFAULT_THRESHOLD)
     time.sleep(1)
-    measure_with_cheats(bot)
+    measure(bot)
 
     result = [bot.position["x"], bot.position["y"], bot.measurement]
     if (isNewHighestPoint(result)):
         highest_point = result
         if has_higher_concentration(highest_point, [-1, -1, FINISH_VALUE]):
+            print("The highest point", highest_point)
             stop(bot)
             exit()
 
@@ -253,11 +285,10 @@ bot.set_leds(0, 0, 30)
 #     bot, point_list)
 # print("Explored Points:" + str(explored_points_list))
 
-# explored_point = [1105, 452, 101]
-explored_point = [606, 795, 51]
+explored_point = [650, 632, 98]
+# explored_point = [1000, 500, 51]
 # max_point = get_point_with_highest_concentration(explored_points_list)
 # print(max_point)
-time.sleep(1)
 simplex(bot, explored_point)
 
 bot.set_leds(0, 0, 0)
