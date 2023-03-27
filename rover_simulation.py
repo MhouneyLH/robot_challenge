@@ -11,11 +11,10 @@ class MapPoint:
 
 
 def generate_map(seed: int) -> np.array:
-    width = 100
+    width = 200
     height = 100
-    shape = (width, height)
-    noise = PerlinNoise(octaves=2, seed=seed)
 
+    noise = PerlinNoise(octaves=2, seed=seed)
     noise_map = np.zeros((height, width))
 
     for y in range(height):
@@ -31,18 +30,32 @@ def create_map_plot(map: np.array):
     height = map.shape[0]
 
     figure, ax = plt.subplots()
-    ax.imshow(map, origin='lower', extent=[0, width, 0, height])
+    ax.imshow(map, cmap='hot', origin='lower', extent=[0, width, 0, height])
     ax.set_title('Generated Map')
 
     plt.show()
 
 
-def drawColoredPlot(x, y, z):
-    fig = plt.Figure()
-    plt.contourf(x*10, y*10, z, 70, cmap="hot")
-    plt.colorbar()
-    plt.show()
+def convert_to_map_points(map: np.array) -> list[MapPoint]:
+    width = map.shape[1]
+    height = map.shape[0]
+
+    point_list: list[MapPoint] = []
+    for x in range(width):
+        for y in range(height):
+            point: np.array = [x, y]
+            point_list.append(MapPoint(point=point, concentration=map[y][x]))
+
+    return point_list
+
+
+def print_map_points(map_points: list[MapPoint]):
+    for point in map_points:
+        print(point.point, point.concentration)
 
 
 map: np.array = generate_map(1)
+map_points = convert_to_map_points(map)
+# print_map_points(map_points)
+
 create_map_plot(map)
