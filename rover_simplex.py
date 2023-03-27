@@ -1,5 +1,5 @@
 from rover_base import Rover
-from getkey import getkey
+# from getkey import getkey
 import time
 import numpy as np
 
@@ -48,31 +48,31 @@ def turn_left(bot: Rover):
     bot.set_motor_speed(-TURNING_SPEED, TURNING_SPEED)
 
 
-def remote_control(bot: Rover):
-    key = "0"
-    while key != "b":
-        key = getkey()
+# def remote_control(bot: Rover):
+#     key = "0"
+#     while key != "b":
+#         key = getkey()
 
-        match key:
-            case "w":
-                bot.set_motor_speed(SPEED, SPEED)
-            case "s":
-                bot.set_motor_speed(-SPEED, -SPEED)
-            case "a":
-                turn_left(bot)
-            case "d":
-                turn_right(bot)
-            case "c":
-                bot.set_motor_speed(0, 0)
-            case "m":
-                print(measure(bot))
+#         match key:
+#             case "w":
+#                 bot.set_motor_speed(SPEED, SPEED)
+#             case "s":
+#                 bot.set_motor_speed(-SPEED, -SPEED)
+#             case "a":
+#                 turn_left(bot)
+#             case "d":
+#                 turn_right(bot)
+#             case "c":
+#                 bot.set_motor_speed(0, 0)
+#             case "m":
+#                 print(measure(bot))
 
 ######################################
 # HELPER_FUNCTIONS
 ######################################
 
 
-# def measure(bot):
+# def measure(bot: Rover):
 #     bot.measurement = MEASUREMENT_DEFAULT_VALUE
 #     bot.cheat()
 
@@ -83,14 +83,14 @@ def remote_control(bot: Rover):
 #             bot.set_motor_speed(SPEED, SPEED)
 #             time.sleep(0.2)
 #             bot.set_motor_speed(0, 0)
-            # time.sleep(0.5)
+    # time.sleep(0.5)
 #             bot.cheat()
 #         time.sleep(1)
 
 #     return bot.measurement
 
 
-def measure(bot):
+def measure(bot: Rover):
     bot.measurement = MEASUREMENT_DEFAULT_VALUE
     bot.set_servo1_pos(SERVO_DOWN)
     i = 0
@@ -109,7 +109,7 @@ def measure(bot):
     return bot.measurement
 
 
-def isNewHighestPoint(point):
+def isNewHighestPoint(point: np.array):
     global highest_point
     return has_higher_concentration(point, highest_point)
 
@@ -137,7 +137,7 @@ def stop(bot: Rover):
     bot.disconnect()
 
 
-def get_boundary_checked_point(point):
+def get_boundary_checked_point(point: np.array):
     x = point[0]
     y = point[1]
 
@@ -154,7 +154,7 @@ def get_boundary_checked_point(point):
     return result
 
 
-def get_real_values(bot: Rover, point):
+def get_real_values(bot: Rover, point: np.array):
     global highest_point
 
     # keep the robo in predefined boundaries
@@ -176,17 +176,17 @@ def get_real_values(bot: Rover, point):
     return result
 
 
-def get_ascended_sorted_list(points_list):
+def get_ascended_sorted_list(points_list: np.array):
     return sorted(points_list, key=lambda tupel: tupel[2], reverse=True)
 
 
-def get_middle_point(p1, p2):
+def get_middle_point(p1: np.array, p2: np.array):
     result = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) /
               2, MEASUREMENT_DEFAULT_VALUE]
     return result
 
 
-def calculate_point_formula_1(p1, p2, constant):
+def calculate_point_formula_1(p1: np.array, p2: np.array, constant):
     result = [p1[0] + constant * (p1[0] - p2[0]),
               p1[1] + constant * (p1[1] - p2[1]), MEASUREMENT_DEFAULT_VALUE]
     return result
@@ -203,7 +203,7 @@ def calculate_point_formula_2(p1, p2, constant):
     return result
 
 
-def simplex(bot: Rover, p1):
+def simplex(bot: Rover, p1: np.array):
     global highest_point
 
     ALPHA = 1.3
