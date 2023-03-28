@@ -19,10 +19,11 @@ class MapPoint:
 
 
 class SimulatedRover:
-    def __init__(self, starting_position: np.array = DEFAULT_STARTING_POSITION, current_concentration: float = DEFAULT_CONCENTRATION, speed: int = DEFAULT_SPEED):
+    def __init__(self, starting_position: np.array = DEFAULT_STARTING_POSITION, current_concentration: float = DEFAULT_CONCENTRATION, speed: int = DEFAULT_SPEED, explored_points: np.array = []):
         self.position = starting_position
         self.current_concentration = current_concentration
         self.speed = speed
+        self.explored_points = explored_points
 
     def get_concentration_at_point(self, map_points: list[MapPoint], point: np.array) -> float:
         for point in map_points:
@@ -30,9 +31,13 @@ class SimulatedRover:
                 return point.concentration
         return DEFAULT_CONCENTRATION
 
-    def get_concentration_of_current_position(self, map_points: list[MapPoint]):
+    def get_concentration_of_current_position(self, map_points: list[MapPoint]) -> float:
         result = self.get_concentration_at_point(self.position)
         return result
+
+    def move_to(self, point: np.array):
+        self.position = point
+        self.explored_points.append(point)
 
 
 def generate_map(seed: int) -> np.array:
@@ -47,14 +52,15 @@ def generate_map(seed: int) -> np.array:
     return noise_map
 
 
-def create_map_plot(map: np.array):
+def create_map_plot(explored_points: np.array, map: np.array):
     figure, ax = plt.subplots()
     ax.imshow(map, cmap='hot', origin='lower', extent=[
               0, FIELD_WIDTH, 0, FIELD_HEIGHT])
     ax.set_title('Generated Map')
 
-    for i in range(0, 100):
-        ax.plot(i, i, 'x', markersize=2, color='green')
+    print(explored_points)
+    for point in explored_points:
+        ax.plot(point[0], point[1], 'o', markersize=3, color='green')
     plt.show()
 
 
@@ -68,14 +74,14 @@ def convert_to_map_points(map: np.array) -> list[MapPoint]:
     return point_list
 
 
-def print_map_points(map_points: list[MapPoint]):
+def print_map_points(map_points: list[MapPoint]) -> None:
     for point in map_points:
         print(point.point, point.concentration)
 
 
-def simplex(bot: SimulatedRover, map_points: list[MapPoint], plotted_map: np.array):
+def simplex(bot: SimulatedRover, map_points: list[MapPoint], plotted_map: np.array) -> None:
     print("simplex")
-    create_map_plot(plotted_map)
+    create_map_plot(bot.explored_points, plotted_map)
 
 
 explored_points: list[MapPoint] = []
