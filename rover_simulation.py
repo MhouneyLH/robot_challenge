@@ -5,34 +5,51 @@ import numpy as np
 import matplotlib.pyplot as plt
 from perlin_noise import PerlinNoise
 
-FIELD_WIDTH = 200
-FIELD_HEIGHT = 100
+FIELD_WIDTH: int = 200
+FIELD_HEIGHT: int = 100
 DEFAULT_STARTING_POSITION: np.array = [0, 0]
 DEFAULT_CONCENTRATION: int = -1
 DEFAULT_SPEED: int = 10
+FINISH_VALUE: int = 200
 
 
 class MapPoint:
-    def __init__(self, point: np.array, concentration: float):
-        self.point = point
-        self.concentration = concentration
+    def __init__(self, point: np.array, concentration: int = DEFAULT_CONCENTRATION):
+        self.point: np.array = np.array(point).astype(int)
+        self.concentration: int = concentration
+
+    def update(self, map_point) -> None:
+        self.point = map_point.point
+        self.concentration = map_point.concentration
 
 
 class SimulatedRover:
-    def __init__(self, starting_position: np.array = DEFAULT_STARTING_POSITION, current_concentration: float = DEFAULT_CONCENTRATION, speed: int = DEFAULT_SPEED, explored_points: np.array = []):
-        self.position = starting_position
-        self.current_concentration = current_concentration
-        self.speed = speed
-        self.explored_points = explored_points
+    def __init__(self, starting_position: np.array = DEFAULT_STARTING_POSITION, current_concentration: int = DEFAULT_CONCENTRATION, speed: int = DEFAULT_SPEED, explored_points: np.array = [], highest_concentration: int = DEFAULT_CONCENTRATION):
+        self.position: np.array = starting_position
+        self.current_concentration: int = current_concentration
+        self.speed: int = speed
+        self.explored_points: np.array = explored_points
+        self.highest_concentration: int = highest_concentration
 
-    def get_concentration_at_point(self, map_points: list[MapPoint], point: np.array) -> float:
-        for point in map_points:
-            if point.point == point:
-                return point.concentration
+    def stop(self) -> None:
+        print("Highest found point", self.highest_concentration)
+        print(self.position)
+
+        self.position = DEFAULT_STARTING_POSITION
+        self.current_concentration = DEFAULT_CONCENTRATION
+        self.speed = DEFAULT_SPEED
+        self.explored_points = []
+        self.highest_concentration = DEFAULT_CONCENTRATION
+
+    def get_concentration_at_point(self, map_points: list[MapPoint], target_point: np.array) -> float:
+        for item in map_points:
+            if np.array_equal(item.point, target_point):
+                return item.concentration
         return DEFAULT_CONCENTRATION
 
     def get_concentration_of_current_position(self, map_points: list[MapPoint]) -> float:
-        result = self.get_concentration_at_point(self.position)
+        result = self.get_concentration_at_point(map_points, self.position)
+        self.current_concentration = result
         return result
 
     def move_to(self, point: np.array):
@@ -52,15 +69,23 @@ def generate_map(seed: int) -> np.array:
     return noise_map
 
 
-def create_map_plot(explored_points: np.array, map: np.array):
+def stop(bot: SimulatedRover) -> None:
+    print("Highest found point", bot.highest_concentration)
+    print(bot.position)
+    create_map_plot(generated_map, bot.explored_points)
+    bot.stop()
+
+    exit(0)
+
+
+def create_map_plot(map: np.array, explored_points: np.array):
     figure, ax = plt.subplots()
     ax.imshow(map, cmap='hot', origin='lower', extent=[
               0, FIELD_WIDTH, 0, FIELD_HEIGHT])
     ax.set_title('Generated Map')
 
-    print(explored_points)
-    for point in explored_points:
-        ax.plot(point[0], point[1], 'o', markersize=3, color='green')
+    ax.plot(np.array(explored_points)[:, 0],
+            np.array(explored_points)[:, 1], marker='o', linestyle='-')
     plt.show()
 
 
@@ -79,16 +104,115 @@ def print_map_points(map_points: list[MapPoint]) -> None:
         print(point.point, point.concentration)
 
 
-def simplex(bot: SimulatedRover, map_points: list[MapPoint], plotted_map: np.array) -> None:
-    print("simplex")
-    create_map_plot(bot.explored_points, plotted_map)
+def has_higher_concentration(point_1: MapPoint, point_2: MapPoint) -> bool:
+    return point_1.concentration > point_2.concentration
 
 
-explored_points: list[MapPoint] = []
+def get_ascended_sorted_list(triangle_points: list[MapPoint]) -> list[MapPoint]:
+    return sorted(triangle_points, key=lambda attribute: attribute.concentration, reverse=True)
+
+
+def measure_concentration_at_point_and_check_highest_concencration(bot: SimulatedRover, map_points: list[MapPoint], point: np.array) -> int:
+    bot.move_to(point)
+    bot.current_concentration = bot.get_concentration_of_current_position(
+        map_points)
+
+    if bot.current_concentration > bot.highest_concentration:
+        bot.highest_concentration = bot.current_concentration
+
+        if bot.highest_concentration > FINISH_VALUE:
+            stop(bot)
+    return bot.current_concentration
+
+
+def simplex(bot: SimulatedRover, map_points: list[MapPoint]) -> None:
+    ALPHA = 1.3
+    BETA = 0.75
+    GAMMA = 1.25
+    DELTA = 0.5
+
+    # define starting points
+    starting_point_1: MapPoint = MapPoint(
+        point=[FIELD_WIDTH / 2, FIELD_HEIGHT / 2],)
+    starting_point_1.concentration = measure_concentration_at_point_and_check_highest_concencration(
+        bot, map_points, starting_point_1.point)
+    starting_point_2: MapPoint = MapPoint(
+        point=[starting_point_1.point[0] + 100, starting_point_1.point[1]],)
+    starting_point_2.concentration = measure_concentration_at_point_and_check_highest_concencration(
+        bot, map_points, starting_point_2.point)
+    starting_point_3: MapPoint = MapPoint(
+        point=[starting_point_1.point[0] + 50, starting_point_1.point[1] + 40],)
+    starting_point_3.concentration = measure_concentration_at_point_and_check_highest_concencration(
+        bot, map_points, starting_point_3.point)
+
+    triangle_points: list[MapPoint] = [
+        starting_point_1, starting_point_2, starting_point_3,]
+    print("triangle_points")
+    print_map_points(triangle_points)
+
+    while bot.highest_concentration < FINISH_VALUE:
+        print_map_points(triangle_points)
+
+        print("Highest Concentration so far:",
+              bot.highest_concentration, bot.position)
+
+        sorted_list: list[MapPoint] = get_ascended_sorted_list(triangle_points)
+        print("sorted_list")
+        print_map_points(sorted_list)
+
+        best_point: MapPoint = sorted_list[0]
+        second_best_point: MapPoint = sorted_list[1]
+        worst_point: MapPoint = sorted_list[2]
+
+        # MIDDLE-POINT
+        middle_point_of_2_best_points: MapPoint = MapPoint(
+            point=np.divide(best_point.point + second_best_point.point, 2))
+
+        # REFLECTION-POINT
+        reflection_point: MapPoint = MapPoint(
+            point=middle_point_of_2_best_points.point + np.multiply(middle_point_of_2_best_points.point - worst_point.point, ALPHA))
+        reflection_point.concentration = measure_concentration_at_point_and_check_highest_concencration(
+            bot, map_points, reflection_point.point)
+
+        if has_higher_concentration(reflection_point, best_point):
+            # EXPANDING-POINT
+            expand_point: MapPoint = MapPoint(
+                point=reflection_point.point + np.multiply(reflection_point.point - middle_point_of_2_best_points.point, GAMMA))
+            expand_point.concentration = measure_concentration_at_point_and_check_highest_concencration(
+                bot, map_points, expand_point.point)
+
+            # exchange worst-point
+            if has_higher_concentration(expand_point, reflection_point):
+                worst_point.update(expand_point)
+                continue
+
+            worst_point.update(reflection_point)
+            continue
+        # exchange worst-point
+        elif has_higher_concentration(reflection_point, second_best_point):
+            worst_point.update(reflection_point)
+            continue
+
+        # CONTRACTION-POINT
+        h: MapPoint = reflection_point if has_higher_concentration(
+            reflection_point, worst_point) else worst_point
+
+        contracting_point: MapPoint = MapPoint(
+            point=h.point + np.multiply(middle_point_of_2_best_points.point - h.point, BETA))
+        contracting_point.concentration = measure_concentration_at_point_and_check_highest_concencration(
+            bot, map_points, contracting_point.point)
+
+        # exchange worst-point
+        if has_higher_concentration(contracting_point, worst_point):
+            worst_point.update(contracting_point)
+            continue
+
+
 bot: SimulatedRover = SimulatedRover()
 
-map: np.array = generate_map(1)
-map_points = convert_to_map_points(map)
+generated_map: np.array = generate_map(0.2)
+map_points: list[MapPoint] = convert_to_map_points(generated_map)
 # print_map_points(map_points)
 
-simplex(bot, map_points, map)
+simplex(bot, map_points)
+stop(bot)
