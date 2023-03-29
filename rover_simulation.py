@@ -79,13 +79,16 @@ def stop(bot: SimulatedRover) -> None:
 
 
 def create_map_plot(map: np.array, explored_points: np.array):
-    figure, ax = plt.subplots()
+    figure = plt.figure(figsize=(20, 10))
+    ax = figure.add_subplot(111)
+
     ax.imshow(map, cmap='hot', origin='lower', extent=[
               0, FIELD_WIDTH, 0, FIELD_HEIGHT])
     ax.set_title('Generated Map')
 
     ax.plot(np.array(explored_points)[:, 0],
             np.array(explored_points)[:, 1], marker='o', linestyle='-')
+
     plt.show()
 
 
@@ -112,8 +115,26 @@ def get_ascended_sorted_list(triangle_points: list[MapPoint]) -> list[MapPoint]:
     return sorted(triangle_points, key=lambda attribute: attribute.concentration, reverse=True)
 
 
+def get_in_bound_point(point: np.array) -> np.array:
+    x = point[0]
+    y = point[1]
+
+    if (x < 0):
+        x = 0
+    elif (x > FIELD_WIDTH):
+        x = FIELD_WIDTH
+    if (y < 0):
+        y = 0
+    elif (y > FIELD_HEIGHT):
+        y = FIELD_HEIGHT
+
+    result = [x, y]
+    return result
+
+
 def measure_concentration_at_point_and_check_highest_concencration(bot: SimulatedRover, map_points: list[MapPoint], point: np.array) -> int:
-    bot.move_to(point)
+    in_bound_point = get_in_bound_point(point)
+    bot.move_to(in_bound_point)
     bot.current_concentration = bot.get_concentration_of_current_position(
         map_points)
 
@@ -210,7 +231,7 @@ def simplex(bot: SimulatedRover, map_points: list[MapPoint]) -> None:
 
 bot: SimulatedRover = SimulatedRover()
 
-generated_map: np.array = generate_map(0.2)
+generated_map: np.array = generate_map(1)
 map_points: list[MapPoint] = convert_to_map_points(generated_map)
 # print_map_points(map_points)
 
