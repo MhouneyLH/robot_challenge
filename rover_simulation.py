@@ -1,16 +1,18 @@
-import math
 from matplotlib.animation import FuncAnimation
-import time
 import numpy as np
 import matplotlib.pyplot as plt
 from perlin_noise import PerlinNoise
+import random
 
-FIELD_WIDTH: int = 200
-FIELD_HEIGHT: int = 100
+FIELD_WIDTH: int = 500
+FIELD_HEIGHT: int = 300
 DEFAULT_STARTING_POSITION: np.array = [0, 0]
 DEFAULT_CONCENTRATION: int = -1
 DEFAULT_SPEED: int = 10
 FINISH_VALUE: int = 200
+WINDOW_WIDTH_IN_INCHES: int = 20
+WINDOW_HEIHGT_IN_INCHES: int = 10
+MAXIMUM_LOOP_COUNT: int = 10
 
 
 class MapPoint:
@@ -58,13 +60,14 @@ class SimulatedRover:
 
 
 def generate_map(seed: int) -> np.array:
-    noise = PerlinNoise(octaves=2, seed=seed)
+    print("Using seed", seed)
+    noise = PerlinNoise(octaves=1, seed=seed)
     noise_map = np.zeros((FIELD_HEIGHT, FIELD_WIDTH))
 
     for y in range(FIELD_HEIGHT):
         for x in range(FIELD_WIDTH):
             noise_map[y][x] = np.abs(
-                int(255 * 2.5 * noise([x / FIELD_WIDTH, y / FIELD_HEIGHT])))
+                int(800 * noise([x / FIELD_WIDTH, y / FIELD_HEIGHT])))
 
     return noise_map
 
@@ -79,7 +82,8 @@ def stop(bot: SimulatedRover) -> None:
 
 
 def create_map_plot(map: np.array, explored_points: np.array):
-    figure = plt.figure(figsize=(20, 10))
+    figure = plt.figure(
+        figsize=(WINDOW_WIDTH_IN_INCHES, WINDOW_HEIHGT_IN_INCHES))
     ax = figure.add_subplot(111)
 
     ax.imshow(map, cmap='hot', origin='lower', extent=[
@@ -171,15 +175,13 @@ def simplex(bot: SimulatedRover, map_points: list[MapPoint]) -> None:
     print("triangle_points")
     print_map_points(triangle_points)
 
-    while bot.highest_concentration < FINISH_VALUE:
-        print_map_points(triangle_points)
-
+    for i in range(MAXIMUM_LOOP_COUNT):
         print("Highest Concentration so far:",
               bot.highest_concentration, bot.position)
 
         sorted_list: list[MapPoint] = get_ascended_sorted_list(triangle_points)
-        print("sorted_list")
-        print_map_points(sorted_list)
+        # print("sorted_list")
+        # print_map_points(sorted_list)
 
         best_point: MapPoint = sorted_list[0]
         second_best_point: MapPoint = sorted_list[1]
@@ -231,7 +233,8 @@ def simplex(bot: SimulatedRover, map_points: list[MapPoint]) -> None:
 
 bot: SimulatedRover = SimulatedRover()
 
-generated_map: np.array = generate_map(1)
+seed: float = random.uniform(0, 10000)
+generated_map: np.array = generate_map(seed)
 map_points: list[MapPoint] = convert_to_map_points(generated_map)
 # print_map_points(map_points)
 
