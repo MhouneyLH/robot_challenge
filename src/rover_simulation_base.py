@@ -3,7 +3,7 @@ import map_generation as mg
 
 DEFAULT_STARTING_POSITION: np.array = [0, 0]
 DEFAULT_SPEED: int = 10
-FINISH_VALUE: int = 200
+FINISH_VALUE: int = 220
 
 
 class SimulatedRover:
